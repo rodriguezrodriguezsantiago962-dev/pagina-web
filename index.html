@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Usuarios - Landing Page</title>
+    <!-- Google Icon Font -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Materialize CSS CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: #f5f5f5;
+        }
+        main {
+            flex: 1 0 auto;
+        }
+        .hero {
+            background: linear-gradient(135deg, #26a69a 0%, #00796b 100%);
+            color: white;
+            padding: 4rem 0;
+            margin-bottom: 2rem;
+        }
+        .card {
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hero Section -->
+    <header class="hero center-align">
+        <div class="container">
+            <h1 class="header white-text">Bienvenido a Nuestra Plataforma</h1>
+            <p class="flow-text">Completa el registro para comenzar a gestionar tus datos.</p>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main>
+        <div class="container">
+            <div class="row">
+                <!-- Formulario -->
+                <div class="col s12 m5">
+                    <div class="card hoverable">
+                        <div class="card-content">
+                            <span class="card-title teal-text text-darken-2">
+                                <i class="material-icons left">person_add</i>Nuevo Registro
+                            </span>
+                            <form id="registroForm">
+                                <div class="input-field">
+                                    <i class="material-icons prefix">account_circle</i>
+                                    <input id="nombre" type="text" class="validate" required>
+                                    <label for="nombre">Nombre Completo</label>
+                                </div>
+                                <div class="input-field">
+                                    <i class="material-icons prefix">email</i>
+                                    <input id="email" type="email" class="validate" required>
+                                    <label for="email">Correo Electrónico</label>
+                                </div>
+                                <div class="input-field">
+                                    <i class="material-icons prefix">phone</i>
+                                    <input id="telefono" type="tel" class="validate" required>
+                                    <label for="telefono">Teléfono</label>
+                                </div>
+                                <div class="center-align">
+                                    <button class="btn waves-effect waves-light teal darken-1" type="submit">
+                                        Guardar <i class="material-icons right">save</i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Registros -->
+                <div class="col s12 m7">
+                    <div class="card hoverable">
+                        <div class="card-content">
+                            <span class="card-title teal-text text-darken-2">
+                                <i class="material-icons left">list</i>Registros Almacenados
+                            </span>
+                            <div style="overflow-x: auto;">
+                                <table class="highlight responsive-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Teléfono</th>
+                                            <th class="center-align">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaRegistros">
+                                        <!-- Aquí se cargarán los registros -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para el envío de correo -->
+    <div id="modalCorreo" class="modal">
+        <div class="modal-content">
+            <h4 class="teal-text text-darken-2"><i class="material-icons left">email</i> Envío de Correo Electrónico</h4>
+            <p>Se enviarán los datos del usuario seleccionado a través del servidor:</p>
+            <div class="input-field">
+                <input disabled value="" id="modalEmailDestino" type="text" class="validate">
+                <label for="modalEmailDestino" class="active">Para:</label>
+            </div>
+            <div class="input-field">
+                <input disabled value="Datos de Registro" id="modalAsunto" type="text" class="validate">
+                <label for="modalAsunto" class="active">Asunto:</label>
+            </div>
+            <div class="input-field">
+                <textarea disabled id="modalMensaje" class="materialize-textarea"></textarea>
+                <label for="modalMensaje" class="active">Mensaje:</label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">Cancelar</a>
+            <a href="#!" onclick="enviarCorreoServidor()" class="waves-effect waves-light btn teal darken-1">Enviar Correo <i class="material-icons right">send</i></a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="page-footer teal darken-2">
+        <div class="container center-align white-text">
+            © 2026 Landing Page - Proyecto Escolar
+        </div>
+    </footer>
+
+    <!-- Materialize JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        let idEditando = null;
+        let datosCorreoActual = {};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            M.AutoInit();
+            mostrarRegistros();
+
+            const form = document.getElementById('registroForm');
+            
+            // Manejar el envío del formulario (Crear o Actualizar)
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const datos = {
+                    nombre: document.getElementById('nombre').value,
+                    email: document.getElementById('email').value,
+                    telefono: document.getElementById('telefono').value
+                };
+
+                let url = 'guardar.php';
+                if (idEditando !== null) {
+                    url = 'actualizar.php';
+                    datos.id = idEditando;
+                }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(datos)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        M.toast({html: data.message, classes: 'teal'});
+                        form.reset();
+                        M.updateTextFields();
+                        
+                        if (idEditando !== null) {
+                            idEditando = null;
+                            const btnSubmit = form.querySelector('button[type="submit"]');
+                            if (btnSubmit) btnSubmit.innerHTML = 'Guardar <i class="material-icons right">save</i>';
+                        }
+
+                        mostrarRegistros();
+                    } else {
+                        M.toast({html: data.message, classes: 'red'});
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    M.toast({html: 'Error de conexión con el servidor', classes: 'red'});
+                });
+            });
+        });
+
+        // Función para cargar los registros desde la Base de Datos
+        function mostrarRegistros() {
+            const tablaRegistros = document.getElementById('tablaRegistros');
+
+            fetch('obtener.php')
+            .then(response => response.json())
+            .then(registros => {
+                tablaRegistros.innerHTML = '';
+
+                if (registros.length === 0) {
+                    tablaRegistros.innerHTML = `<tr><td colspan="4" class="center-align grey-text">No hay registros almacenados.</td></tr>`;
+                    return;
+                }
+
+                registros.forEach((reg) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${reg.nombre}</td>
+                        <td>${reg.email}</td>
+                        <td>${reg.telefono}</td>
+                        <td class="center-align">
+                            <button onclick="prepararCorreo('${reg.email}', '${reg.nombre}', '${reg.telefono}')" class="btn-small waves-effect waves-light blue darken-2 tooltipped modal-trigger" data-target="modalCorreo" data-position="top" data-tooltip="Enviar Correo" style="margin-right: 3px;">
+                                <i class="material-icons">email</i>
+                            </button>
+                            <button onclick="prepararEdicion(${reg.id}, '${reg.nombre}', '${reg.email}', '${reg.telefono}')" class="btn-small waves-effect waves-light amber darken-2 tooltipped" data-position="top" data-tooltip="Editar Registro" style="margin-right: 3px;">
+                                <i class="material-icons">edit</i>
+                            </button>
+                            <button onclick="eliminarRegistro(${reg.id})" class="btn-small waves-effect waves-light red darken-2 tooltipped" data-position="top" data-tooltip="Eliminar Registro">
+                                <i class="material-icons">delete</i>
+                            </button>
+                        </td>
+                    `;
+                    tablaRegistros.appendChild(tr);
+                });
+
+                M.Tooltip.init(document.querySelectorAll('.tooltipped'));
+                M.Modal.init(document.querySelectorAll('.modal'));
+            })
+            .catch(error => console.error('Error al cargar registros:', error));
+        }
+
+        // Funciones para el envío real de correo mediante el modal y PHP
+        function prepararCorreo(email, nombre, telefono) {
+            datosCorreoActual = { email, nombre, telefono };
+            document.getElementById('modalEmailDestino').value = email;
+            document.getElementById('modalMensaje').value = `Hola ${nombre},\n\nTus datos de registro:\nEmail: ${email}\nTeléfono: ${telefono}`;
+            M.updateTextFields();
+            M.textareaAutoResize(document.getElementById('modalMensaje'));
+        }
+
+        function enviarCorreoServidor() {
+            const elem = document.getElementById('modalCorreo');
+            const instance = M.Modal.getInstance(elem);
+
+            fetch('enviar_correo.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(datosCorreoActual)
+            })
+            .then(response => response.json())
+            .then(data => {
+                instance.close();
+                if (data.success) {
+                    M.toast({html: data.message, classes: 'teal'});
+                } else {
+                    M.toast({html: data.message, classes: 'red'});
+                }
+            })
+            .catch(error => {
+                instance.close();
+                console.error('Error:', error);
+                M.toast({html: 'Error de conexión con el servidor de correo', classes: 'red'});
+            });
+        }
+
+        function prepararEdicion(id, nombre, email, telefono) {
+            idEditando = id;
+            document.getElementById('nombre').value = nombre;
+            document.getElementById('email').value = email;
+            document.getElementById('telefono').value = telefono;
+            
+            M.updateTextFields();
+
+            const form = document.getElementById('registroForm');
+            const btnSubmit = form.querySelector('button[type="submit"]');
+            if (btnSubmit) {
+                btnSubmit.innerHTML = 'Actualizar <i class="material-icons right">update</i>';
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Función para eliminar un registro con confirmación
+        function eliminarRegistro(id) {
+            if (confirm("¿Estás seguro de que deseas eliminar este registro?")) {
+                fetch('eliminar.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: id })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        M.toast({html: data.message, classes: 'teal'});
+                        mostrarRegistros();
+                    } else {
+                        M.toast({html: data.message, classes: 'red'});
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    M.toast({html: 'Error de conexión al eliminar', classes: 'red'});
+                });
+            }
+        }
+    </script>
+</body>
+</html>
