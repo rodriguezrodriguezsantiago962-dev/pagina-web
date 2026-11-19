@@ -15,3 +15,7 @@ try {
     echo json_encode(["success" => false, "message" => "Error de conexión BD: " . $e->getMessage()]);
     exit;
 }
+
+git config --global user.name "Santiago" && git config --global user.email "rodriguezrodriguezsantiago66@gmail.com" && git commit -m 
+"Deploy PHP 8.2 Apache con TiDB Cloud" && git branch -M main && git remote add origin 
+https://github.com/rodriguezrodriguezsantiago962-dev/practica01-php-docker.git && git push -u origin main
